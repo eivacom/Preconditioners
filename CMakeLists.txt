@@ -1,6 +1,6 @@
 # dmrosen 4-July-2022
 
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.19)
 
 # PROJECT CONFIGURATION
 project(Preconditioners LANGUAGES C CXX VERSION 1.0.0)
@@ -31,6 +31,7 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin CACHE PATH "The direc
 set(ENABLE_VECTORIZATION OFF CACHE BOOL "Enable vectorized instruction sets (SIMD/AVX)? [disabled by default]")
 # Enable code profiling using gperftools
 set(ENABLE_PROFILING OFF CACHE BOOL "Enable code profiling using gperftools")
+set(ENABLE_SUITESPARSE OFF CACHE BOOL  "Enable SuiteSparse (disable for LGPL complince)")
 
 # Add the .cmake files that ship with Eigen3 to the CMake module path (useful for finding other stuff)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" CACHE STRING "The CMake module path used for this project")
@@ -46,7 +47,6 @@ endif()
 # FIND ADDITIONAL LIBRARIES
 # These next operations make use of the .cmake files shipped with Eigen3
 find_package(OpenMP REQUIRED)
-find_package(SPQR REQUIRED)
 
 # Set location of the include directory for the SYM-ILDL library
 set(SymILDL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SymILDL/SymILDL)
@@ -73,10 +73,11 @@ set(ILDL_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${ILDL_INCLUDE_DIR} ${EIGEN3_INCLU
 
 add_library(ILDL SHARED ${ILDL_HDRS} ${ILDL_SRCS})
 target_include_directories(ILDL PUBLIC ${SymILDL_INCLUDE_DIR} ${ILDL_INCLUDES})
-target_link_libraries(ILDL ${BLAS_LIBRARIES})
+target_link_libraries(ILDL PUBLIC Eigen3::Eigen ${BLAS_LIBRARIES})
 
 
 
+if(${ENABLE_SUITESPARSE})
 # SET UP LSChol LIBRARY
 
 # Set the various directories for this project
@@ -95,14 +96,14 @@ ${LSChol_SOURCE_DIR}/LSChol.cpp
 )
 
 # Eigen 3 is referenced by the header files of the LSChol library, hence must be PUBLICLY included (i.e. clients using the SYMILDLSupport headers must also include these headers)
-set(LSChol_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${EIGEN3_INCLUDE_DIR} ${SPQR_INCLUDES} ${LSChol_INCLUDE_DIR} CACHE INTERNAL "")
+set(LSChol_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${EIGEN3_INCLUDE_DIR} ${LSChol_INCLUDE_DIR} CACHE INTERNAL "")
 
 add_library(LSChol SHARED ${LSChol_HDRS} ${LSChol_SRCS})
 target_include_directories(LSChol PUBLIC ${LSChol_INCLUDES})
-target_link_libraries(LSChol ${BLAS_LIBRARIES} ${SPQR_LIBRARIES} ${M} ${LAPACK})
+target_link_libraries(LSChol PUBLIC Eigen3::Eigen suitesparse::suitesparse)
 set_target_properties(LSChol PROPERTIES COMPILE_FLAGS ${OpenMP_CXX_FLAGS})
 set_target_properties(LSChol PROPERTIES LINK_FLAGS "-fopenmp")
-
+endif()
 # Build unit tests
 if(${BUILD_PRECONDITIONERS_TESTS})
 message(STATUS "Adding unit tests to build")
@@ -112,9 +113,11 @@ endif()
 # EXPORT THIS LIBRARY
 
 # Add add entry for this project into CMake's package registry, so that this project can be found by other CMake projects
-set(CMAKE_EXPORT_PACKAGE_REGISTRY TRUE)  # This flag is required to actually export the package for CMake versions >= 3.15
+set(CMAKE_EXPORT_PACKAGE_REGISTRY FALSE)  # This flag is required to actually export the package for CMake versions >= 3.15
 export(PACKAGE ${PROJECT_NAME})
-
+if(${ENABLE_SUITESPARSE})
 # Create a configuration file for this project, so that it can be imported by other CMake projects
 export(TARGETS ILDL LSChol FILE ${PROJECT_NAME}Config.cmake)
-
+else()
+export(TARGETS ILDL FILE ${PROJECT_NAME}Config.cmake)
+endif()
