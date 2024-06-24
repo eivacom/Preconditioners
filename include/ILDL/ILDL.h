@@ -22,8 +22,6 @@
 
 #include <unordered_map>
 
-#include "lilc_matrix.h" // SYM-ILDL matrix type
-
 #include "Preconditioners/Types.h"
 
 namespace Preconditioners {

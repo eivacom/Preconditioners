@@ -4,6 +4,7 @@
 #include "Eigen/Eigenvalues"
 #include "ILDL/ILDL.h"
 #include "ILDL/ILDL_utils.h"
+#include "lilc_matrix.h" // SYM-ILDL matrix type
 
 namespace Preconditioners {
 
