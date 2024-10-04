@@ -4,8 +4,9 @@ cmake_minimum_required(VERSION 3.19)
 
 # PROJECT CONFIGURATION
 project(Preconditioners LANGUAGES C CXX VERSION 1.0.0)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON) # We require C++ 17 or later
+# Conan sets the standard
+# set(CMAKE_CXX_STANDARD 17)
+# set(CMAKE_CXX_STANDARD_REQUIRED ON) # We require C++ 17 or later
 
 
 # Set build type to 'RelWithDebInfo' if one was not specified by the user
